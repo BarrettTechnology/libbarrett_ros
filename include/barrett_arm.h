@@ -27,14 +27,14 @@
 #include <barrett/standard_main_function.h>
 
 using namespace barrett;
-const std::string BARRETT_ARM_CONTROL_TOPIC = "barrett/arm/control";
-const std::string BARRETT_ARM_JS_TOPIC = "barrett/arm/joint_state";
-const std::string BARRETT_ARM_ES_TOPIC = "barrett/arm/endpoint_state";
+const std::string ARM_CONTROL_TOPIC = "arm/control";
+const std::string ARM_JS_TOPIC = "arm/joint_states";
+const std::string ARM_ES_TOPIC = "arm/endpoint_state";
 
 const std::string jnt_names[] = {"j1", "j2", "j3", "j4", "j5", "j6", "j7"};
 
 template<size_t DOF>
-class barrett_arm_interface{
+class BarrettArmInterface{
 	BARRETT_UNITS_TEMPLATE_TYPEDEFS(DOF);
 
 	//WAM information for retrieval
@@ -54,20 +54,20 @@ class barrett_arm_interface{
 	systems::Wam<DOF>* arm_wam;
 	ProductManager* arm_pm;
 	ros::NodeHandle nh;
-	ros::Subscriber barrett_arm_control_sub;
-	ros::Publisher barrett_arm_js_pub, barrett_arm_es_pub;
+	ros::Subscriber arm_control_sub;
+	ros::Publisher arm_js_pub, arm_es_pub;
 
-	void barrett_arm_control_modes(const wam_msgs::RTPosMode& msg);
-	void publish_barrett_arm_info();
+	void armControlModes(const wam_msgs::RTPosMode&);
+	void armPublishInfo();
 
 public:
-	barrett_arm_interface(ProductManager &pm, systems::Wam<DOF> &wam): arm_wam(&wam), arm_pm(&pm){};
+	BarrettArmInterface(ProductManager &pm, systems::Wam<DOF> &wam): arm_wam(&wam), arm_pm(&pm){};
 	void start();
 
 };
 
 template<size_t DOF>
-void barrett_arm_interface<DOF>::barrett_arm_control_modes(const wam_msgs::RTPosMode& msg){
+void BarrettArmInterface<DOF>::armControlModes(const wam_msgs::RTPosMode& msg){
 		switch (msg.mode) {
 		case wam_msgs::RTPosMode::JOINT_POSITION_CONTROL:
 			printf("Holding joint positions.\n");
@@ -104,7 +104,7 @@ void barrett_arm_interface<DOF>::barrett_arm_control_modes(const wam_msgs::RTPos
  * Publish the Joint and the endpoint states of the wam
  */
 template<size_t DOF>
-void barrett_arm_interface<DOF>::publish_barrett_arm_info(){
+void BarrettArmInterface<DOF>::armPublishInfo(){
 
 	jp = arm_wam->getJointPositions();
 	jv = arm_wam->getJointVelocities();
@@ -130,23 +130,23 @@ void barrett_arm_interface<DOF>::publish_barrett_arm_info(){
 	es.orientation.z = qt.z();
 	es.orientation.w = qt.w();
 
-	barrett_arm_js_pub.publish(js);
-	barrett_arm_es_pub.publish(es);
+	arm_js_pub.publish(js);
+	arm_es_pub.publish(es);
 }
 
 /*
  * Initialize the subscribers and publishers. Initialize the messages with their default values
  */
 template<size_t DOF>
-void barrett_arm_interface<DOF>::start(){
+void BarrettArmInterface<DOF>::start(){
 
-	barrett_arm_control_sub = nh.subscribe(BARRETT_ARM_CONTROL_TOPIC, 1, &barrett_arm_interface<DOF>::barrett_arm_control_modes, this);
+	arm_control_sub = nh.subscribe(ARM_CONTROL_TOPIC, 1, &BarrettArmInterface<DOF>::armControlModes, this);
 
 	//Joint Publishers
-	barrett_arm_js_pub = nh.advertise<sensor_msgs::JointState>(BARRETT_ARM_JS_TOPIC, 1);
+	arm_js_pub = nh.advertise<sensor_msgs::JointState>(ARM_JS_TOPIC, 1);
 
 	//Cartesian Publishers
-	barrett_arm_es_pub = nh.advertise<wam_msgs::EndpointState>(BARRETT_ARM_ES_TOPIC, 1);
+	arm_es_pub = nh.advertise<wam_msgs::EndpointState>(ARM_ES_TOPIC, 1);
 
 	//Initialize the Joint state publisher message with its default values
 	for (size_t i=0; i<DOF; ++i){
@@ -160,7 +160,7 @@ void barrett_arm_interface<DOF>::start(){
 	arm_wam->gravityCompensate();
 
 	while(ros::ok){
-		publish_barrett_arm_info();
+		armPublishInfo();
 		ros::spinOnce();
 		loop_rate.sleep();
 	}
