@@ -27,6 +27,8 @@
 #include <barrett/standard_main_function.h>
 
 using namespace barrett;
+const int RATE = 200; //Execution rate in Hz
+
 const std::string BARRETT_ARM_CONTROL_TOPIC = "barrett/arm/control";
 const std::string BARRETT_ARM_JS_TOPIC = "barrett/arm/joint_state";
 const std::string BARRETT_ARM_ES_TOPIC = "barrett/arm/endpoint_state";
@@ -154,7 +156,7 @@ void barrett_arm_interface<DOF>::start(){
 	}
 
 	//Set the loop rate at 200 Hz
-	ros::Rate loop_rate(200);
+	ros::Rate loop_rate(RATE);
 
 	//Turn on the gravity compensation by default
 	arm_wam->gravityCompensate();
