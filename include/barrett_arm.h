@@ -1,9 +1,12 @@
 /*
- * This node is a ros wrapper for the basic functionalities of a wam arm. This
- * node holds the position, the orientation or both position and orientation as
- * vommanded by the subscribing topic.
- * It also displays the basic info of the wam such as the Joint Position, Velocity,
+ * barrett_arm.h
+ *
+ *  Created on: Oct 16, 2014
+ *      Author: robot
  */
+
+#ifndef BARRETT_ARM_H_
+#define BARRETT_ARM_H_
 
 #include "ros/ros.h"
 #include <iostream>
@@ -24,7 +27,9 @@
 #include <barrett/standard_main_function.h>
 
 using namespace barrett;
-const std::string BARRETT_ARM_CONTROL_TOPIC = "barrett/wam/control";
+const int RATE = 200; //Execution rate in Hz
+
+const std::string BARRETT_ARM_CONTROL_TOPIC = "barrett/arm/control";
 const std::string BARRETT_ARM_JS_TOPIC = "barrett/arm/joint_state";
 const std::string BARRETT_ARM_ES_TOPIC = "barrett/arm/endpoint_state";
 
@@ -48,18 +53,21 @@ class barrett_arm_interface{
 	sensor_msgs::JointState js;
 	wam_msgs::EndpointState es;
 
-	systems::Wam<DOF> * arm_wam;
+	systems::Wam<DOF>* arm_wam;
+	ProductManager* arm_pm;
 	ros::NodeHandle nh;
 	ros::Subscriber barrett_arm_control_sub;
 	ros::Publisher barrett_arm_js_pub, barrett_arm_es_pub;
 
 	void barrett_arm_control_modes(const wam_msgs::RTPosMode& msg);
-	void publish_barrett_arm_info(systems::Wam<DOF> &wam);
+	void publish_barrett_arm_info();
 
 public:
-	barrett_arm_interface(ProductManager &pm, systems::Wam<DOF> &wam);
+	barrett_arm_interface(ProductManager &pm, systems::Wam<DOF> &wam): arm_wam(&wam), arm_pm(&pm){};
+	void start();
 
 };
+
 template<size_t DOF>
 void barrett_arm_interface<DOF>::barrett_arm_control_modes(const wam_msgs::RTPosMode& msg){
 		switch (msg.mode) {
@@ -98,15 +106,15 @@ void barrett_arm_interface<DOF>::barrett_arm_control_modes(const wam_msgs::RTPos
  * Publish the Joint and the endpoint states of the wam
  */
 template<size_t DOF>
-void barrett_arm_interface<DOF>::publish_barrett_arm_info(systems::Wam<DOF> &wam){
+void barrett_arm_interface<DOF>::publish_barrett_arm_info(){
 
-	jp=wam.getJointPositions();
-	jv=wam.getJointVelocities();
-	jt=wam.getJointTorques();
+	jp = arm_wam->getJointPositions();
+	jv = arm_wam->getJointVelocities();
+	jt = arm_wam->getJointTorques();
 
-	cp=wam.getToolPosition();
-	cv=wam.getToolVelocity();
-	qt = wam.getToolOrientation();
+	cp = arm_wam->getToolPosition();
+	cv = arm_wam->getToolVelocity();
+	qt = arm_wam->getToolOrientation();
 
 	//Pack the Joint and Endpoint state messages with the updated values
 	for(size_t i = 0; i < DOF; ++i){
@@ -132,7 +140,7 @@ void barrett_arm_interface<DOF>::publish_barrett_arm_info(systems::Wam<DOF> &wam
  * Initialize the subscribers and publishers. Initialize the messages with their default values
  */
 template<size_t DOF>
-barrett_arm_interface<DOF>::barrett_arm_interface(ProductManager &pm, systems::Wam<DOF> &wam): arm_wam(&wam){
+void barrett_arm_interface<DOF>::start(){
 
 	barrett_arm_control_sub = nh.subscribe(BARRETT_ARM_CONTROL_TOPIC, 1, &barrett_arm_interface<DOF>::barrett_arm_control_modes, this);
 
@@ -148,30 +156,20 @@ barrett_arm_interface<DOF>::barrett_arm_interface(ProductManager &pm, systems::W
 	}
 
 	//Set the loop rate at 200 Hz
-	ros::Rate loop_rate(200);
+	ros::Rate loop_rate(RATE);
 
 	//Turn on the gravity compensation by default
-	wam.gravityCompensate();
+	arm_wam->gravityCompensate();
 
 	while(ros::ok){
-		publish_barrett_arm_info(wam);
+		publish_barrett_arm_info();
 		ros::spinOnce();
 		loop_rate.sleep();
 	}
 
 	//Idle the Wam
-	wam.idle();
-	pm.getSafetyModule()->waitForMode(SafetyModule::IDLE);
+	arm_wam->idle();
+	arm_pm->getSafetyModule()->waitForMode(SafetyModule::IDLE);
 }
 
-template<size_t DOF>
-int wam_main(int argc, char** argv, ProductManager& pm, systems::Wam<DOF>& wam) {
-
-	barrett_arm_interface<DOF> w_if(pm, wam);
-
-	return 0;
-}
-
-
-
-
+#endif /* BARRETT_ARM_H_ */
