@@ -1,3 +1,34 @@
+/*
+ Copyright 2012 Barrett Technology <support@barrett.com>
+
+ This file is part of libbarrett_ros.
+
+ This version of libbarrett_ros is free software: you can redistribute it
+ and/or modify it under the terms of the GNU General Public License as
+ published by the Free Software Foundation, either version 3 of the
+ License, or (at your option) any later version.
+
+ This version of libbarrett_ros is distributed in the hope that it will be
+ useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License along
+ with this version of libbarrett_ros.  If not, see
+ <http://www.gnu.org/licenses/>.
+
+ Barrett Technology holds all copyrights on libbarrett_ros. As the sole
+ copyright holder, Barrett reserves the right to release future versions
+ of libbarrett_ros under a different license.
+
+ File: barrett_hand.h
+ Date: 15 October, 2014
+ Author: Hariharasudan Malaichamee
+ */
+
+#ifndef BARRETT_HAND_H_
+#define BARRETT_HAND_H_
+
 #include "ros/ros.h"
 // The file below provides access to the barrett::units namespace.
 #include <barrett/units.h>
@@ -20,11 +51,15 @@
 
 using namespace barrett;
 
-const int RATE = 200; //Execution rate in Hz
-const char* bhand_jnts[] = {"inner_f1", "inner_f2", "inner_f3", "spread", "outer_f1", "outer_f2", "outer_f3"};
+namespace bhand{
 
+const int HAND_RATE = 200; //Execution rate in Hz
+const char* bhand_jnts[] = {"inner_f1", "inner_f2", "inner_f3", "spread", "outer_f1", "outer_f2", "outer_f3"}; //Hand Joints' name
+
+//Publish topics
 const std::string HAND_JS_TOPIC = "hand/joint_states";
 
+//Service topics
 const std::string HAND_OPN_GRSP_SRV = "hand/open_grasp";
 const std::string HAND_CLS_GRSP_SRV = "hand/close_grasp";
 const std::string HAND_OPN_SPRD_SRV = "hand/open_spread";
@@ -36,18 +71,23 @@ const std::string HAND_GRSP_VEL_SRV = "hand/grasp_vel";
 const std::string HAND_SPRD_POS_SRV = "hand/spread_pos";
 const std::string HAND_SPRD_VEL_SRV = "hand/spread_vel";
 
+//Default Request and Response messages
+std_srvs::Empty::Request def_req;
+std_srvs::Empty::Response def_res;
+
 template<size_t DOF>
 class BarrettHandInterface{
 	BARRETT_UNITS_TEMPLATE_TYPEDEFS(DOF);
 
 	bool isInitialized; //Tracks if the hand is initialized
-	std_srvs::Empty::Request def_req;
-	std_srvs::Empty::Response def_res;
+
 	sensor_msgs::JointState js;
 
 	systems::Wam<DOF>* hand_wam;
 	ProductManager* hand_pm;
 	Hand* hand;
+	ForceTorqueSensor* fts;
+
 	ros::NodeHandle nh;
 	ros::Publisher hand_js_pub;
     ros::ServiceServer hand_open_grsp_srv, hand_close_grsp_srv, hand_open_sprd_srv;
@@ -69,7 +109,8 @@ class BarrettHandInterface{
     bool publishHandInfo();
 
 public:
-    BarrettHandInterface(ProductManager &pm, systems::Wam<DOF> &wam): hand_wam(&wam), hand_pm(&pm), hand(NULL), isInitialized(false){};
+    BarrettHandInterface(ProductManager &pm, systems::Wam<DOF> &wam): hand_wam(&wam), hand_pm(&pm), hand(NULL),
+    	isInitialized(false), fts(NULL){};
     void start();
 };
 
@@ -216,7 +257,7 @@ template<size_t DOF>
 bool BarrettHandInterface<DOF>::publishHandInfo(){
 
 	//Set the loop rate at 200 Hz
-	ros::Rate loop_rate(RATE);
+	ros::Rate loop_rate(HAND_RATE);
 
 	while (ros::ok())
 	    {
@@ -232,6 +273,10 @@ bool BarrettHandInterface<DOF>::publishHandInfo(){
 	      loop_rate.sleep();
 	    }
 }
+
+/*
+ * Initializes the publishers, services and assigns the defaults
+ */
 template<size_t DOF>
 void BarrettHandInterface<DOF>::start(){
 
@@ -256,6 +301,7 @@ void BarrettHandInterface<DOF>::start(){
 		/* TODO Set the safety limits
 		 * Move j3 to give room for hand initialization
 		 */
+
 	    //Set up the BarrettHand joint state publisher
 	    std::vector <std::string> bhand_joints(bhand_jnts, bhand_jnts + 7);
 	    js.name.resize(7);
@@ -264,6 +310,7 @@ void BarrettHandInterface<DOF>::start(){
 
 	    publishHandInfo();
 
-
 	}
 }
+} //namespace
+#endif /* BARRETT_HAND_H_ */

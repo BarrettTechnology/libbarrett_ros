@@ -1,8 +1,29 @@
 /*
- * barrett_arm.h
- *
- *  Created on: Oct 16, 2014
- *      Author: robot
+ Copyright 2012 Barrett Technology <support@barrett.com>
+
+ This file is part of libbarrett_ros.
+
+ This version of libbarrett_ros is free software: you can redistribute it
+ and/or modify it under the terms of the GNU General Public License as
+ published by the Free Software Foundation, either version 3 of the
+ License, or (at your option) any later version.
+
+ This version of libbarrett_ros is distributed in the hope that it will be
+ useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License along
+ with this version of libbarrett_ros.  If not, see
+ <http://www.gnu.org/licenses/>.
+
+ Barrett Technology holds all copyrights on libbarrett_ros. As the sole
+ copyright holder, Barrett reserves the right to release future versions
+ of libbarrett_ros under a different license.
+
+ File: barrett_arm.h
+ Date: 15 October, 2014
+ Author: Hariharasudan Malaichamee
  */
 
 #ifndef BARRETT_ARM_H_
@@ -11,7 +32,7 @@
 #include "ros/ros.h"
 #include <iostream>
 #include <string>
-#include <cstdlib>  // For strtod()
+#include <cstdlib>
 
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Quaternion.h>
@@ -24,20 +45,15 @@
 #include <barrett/systems.h>
 #include <barrett/products/product_manager.h>
 
-#include <barrett/standard_main_function.h>
-
 using namespace barrett;
 
-const int RATE = 200; //Execution rate in Hz
+namespace barm{
 
-const std::string BARRETT_ARM_CONTROL_TOPIC = "barrett/arm/control";
-const std::string BARRETT_ARM_JS_TOPIC = "barrett/arm/joint_state";
-const std::string BARRETT_ARM_ES_TOPIC = "barrett/arm/endpoint_state";
+const int ARM_RATE = 200; //Execution rate in Hz
 
 const std::string ARM_CONTROL_TOPIC = "arm/control";
 const std::string ARM_JS_TOPIC = "arm/joint_states";
 const std::string ARM_ES_TOPIC = "arm/endpoint_state";
-
 
 const std::string jnt_names[] = {"j1", "j2", "j3", "j4", "j5", "j6", "j7"};
 
@@ -162,7 +178,7 @@ void BarrettArmInterface<DOF>::start(){
 	}
 
 	//Set the loop rate at 200 Hz
-	ros::Rate loop_rate(RATE);
+	ros::Rate loop_rate(ARM_RATE);
 
 	//Turn on the gravity compensation by default
 	arm_wam->gravityCompensate();
@@ -177,5 +193,5 @@ void BarrettArmInterface<DOF>::start(){
 	arm_wam->idle();
 	arm_pm->getSafetyModule()->waitForMode(SafetyModule::IDLE);
 }
-
+} //namespace
 #endif /* BARRETT_ARM_H_ */
