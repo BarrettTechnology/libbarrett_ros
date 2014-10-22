@@ -12,23 +12,22 @@ find_package(Barrett REQUIRED)
 find_package(Eigen REQUIRED)
 
 catkin_package(
+  INCLUDE_DIRS include
   CATKIN_DEPENDS 
   message_runtime
   wam_msgs
+  LIBRARIES ${PROJECT_NAME}
 )
 
-include_directories(
+include_directories(include
   ${catkin_INCLUDE_DIRS}
 )
 link_directories(${BARRETT_LIB_DIRS})
 include_directories(${BARRETT_INCLUDE_DIRS})
 add_definitions(${BARRETT_DEFINITIONS})
 
-add_executable(barrett_arm src/barrett_arm.cpp)
-add_dependencies(barrett_arm wam_msgs_gencpp)
-target_link_libraries(barrett_arm ${BARRETT_LIBRARIES} ${catkin_LIBRARIES})
+add_executable(${PROJECT_NAME} src/libbarrett_ros.cpp)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${BARRETT_LIBRARIES})
 
-add_executable(hand src/hand.cpp)
-add_dependencies(hand wam_msgs_gencpp)
-target_link_libraries(hand ${BARRETT_LIBRARIES} ${catkin_LIBRARIES})
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS} wam_msgs_gencpp)
 
