@@ -105,11 +105,11 @@ class BarrettHandInterface{
     bool handGraspVel(wam_msgs::BHandGraspVel::Request &, wam_msgs::BHandGraspVel::Response &);
     bool handSpreadPos(wam_msgs::BHandSpreadPos::Request &, wam_msgs::BHandSpreadPos::Response &);
     bool handSpreadVel(wam_msgs::BHandSpreadVel::Request &, wam_msgs::BHandSpreadVel::Response &);
-    bool publishHandInfo();
+    void publishHandInfo();
 
 public:
-    BarrettHandInterface(ProductManager &pm, systems::Wam<DOF> &wam): hand_wam(&wam), hand_pm(&pm), hand(NULL),
-    	isInitialized(false), fts(NULL){};
+    BarrettHandInterface(ProductManager &pm, systems::Wam<DOF> &wam): isInitialized(false), hand_wam(&wam), hand_pm(&pm),
+    hand(NULL),	fts(NULL){};
     void start();
 };
 
@@ -253,7 +253,7 @@ bool BarrettHandInterface<DOF>::handSpreadVel(wam_msgs::BHandSpreadVel::Request 
 
 //Function to publish the joint states of the hand at desired rate
 template<size_t DOF>
-bool BarrettHandInterface<DOF>::publishHandInfo(){
+void BarrettHandInterface<DOF>::publishHandInfo(){
 
 	//Set the loop rate at 200 Hz
 	ros::Rate loop_rate(HAND_RATE);
