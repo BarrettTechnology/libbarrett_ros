@@ -48,7 +48,6 @@
 
 #include <sensor_msgs/JointState.h>
 
-
 using namespace barrett;
 
 namespace bhand{
