@@ -36,22 +36,24 @@
 
 using namespace barrett;
 template<size_t DOF>
-int wam_main(int argc, char** argv, ProductManager& pm, systems::Wam<DOF>& wam) {
+int wam_main(int argc, char** argv, ProductManager& pm,
+             systems::Wam<DOF>& wam) {
+  ros::init(argc, argv, "libbarrett_ros");
 
-	ros::init(argc, argv, "libbarrett_ros");
+  barm::BarrettArmInterface<DOF> barrett_arm(pm, wam);
+  bhand::BarrettHandInterface<DOF> barrett_hand(pm, wam);
 
-	barm::BarrettArmInterface<DOF> barrett_arm( pm, wam);
-	bhand::BarrettHandInterface<DOF> barrett_hand( pm, wam);
+  // Create thread for the Barrett Arm
+  boost::thread arm_thread(&barm::BarrettArmInterface<DOF>::start,
+                           &barrett_arm);
 
-	//Create thread for the Barrett Arm
-	boost::thread arm_thread(&barm::BarrettArmInterface<DOF>::start, &barrett_arm);
+  // Check if the hand is present and start a seperate thread for it
+  if (pm.foundHand()) {
+    boost::thread hand_thread(&bhand::BarrettHandInterface<DOF>::start,
+                              &barrett_hand);
+    hand_thread.join();
+  }
 
-	//Check if the hand is present and start a seperate thread for it
-	if(pm.foundHand()) {
-		boost::thread hand_thread(&bhand::BarrettHandInterface<DOF>::start, &barrett_hand);
-		hand_thread.join();
-	}
-
-	arm_thread.join();
-	return 0;
+  arm_thread.join();
+  return 0;
 }
