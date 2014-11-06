@@ -30,7 +30,6 @@
 #define INCLUDE_BARRETT_ARM_H_
 
 #include "ros/ros.h"
-// #include <iostream>
 #include <string>
 #include <cstdlib>
 
@@ -51,8 +50,6 @@
 using namespace barrett;
 
 namespace barm {
-
-const int ARM_RATE = 200;  // Execution rate in Hz
 
 // Subscribe topics
 const std::string ARM_CONTROL_TOPIC = "arm/control";
@@ -89,7 +86,7 @@ class BarrettArmInterface {
   systems::Wam<DOF>* arm_wam;
   ProductManager* arm_pm;
 
-  ros::NodeHandle nh;
+  ros::NodeHandle* nh;
   ros::Subscriber arm_control_sub;
   ros::Publisher arm_js_pub, arm_es_pub;
   ros::ServiceServer arm_ctrl_gravity_srv, arm_mv_home_srv, arm_jnt_mv_to_srv;
@@ -97,15 +94,20 @@ class BarrettArmInterface {
   bool controlGravity(wam_msgs::GravityComp::Request &,
       wam_msgs::GravityComp::Response &);
   void armControlModes(const wam_msgs::RTPosMode&);
-  void armPublishInfo();
   bool armMoveHome(std_srvs::Empty::Request &, std_srvs::Empty::Response &);
   bool armJointMoveTo(wam_msgs::JointMove::Request &,
       wam_msgs::JointMove::Response &);
 
  public:
-  BarrettArmInterface(ProductManager &pm, systems::Wam<DOF> &wam)
-  : arm_wam(&wam), arm_pm(&pm) {}
-  void start();
+  BarrettArmInterface(ProductManager &pm, systems::Wam<DOF> &wam,
+                      ros::NodeHandle &n)
+  : arm_wam(&wam), arm_pm(&pm), nh(&n) {}
+  void init();
+  void armPublishInfo();
+  ~BarrettArmInterface() {
+    arm_wam->idle();
+    arm_pm->getSafetyModule()->waitForMode(SafetyModule::IDLE);
+  }
 };
 
 /*
@@ -225,29 +227,28 @@ bool BarrettArmInterface<DOF>::armJointMoveTo(
   arm_wam->moveTo(jp_cmd, false);
   return true;
 }
-
 /*
  * Initialize the subscribers and publishers. Initialize the messages with their default values
  */
 template<size_t DOF>
-void BarrettArmInterface<DOF>::start() {
-  arm_control_sub = nh.subscribe(ARM_CONTROL_TOPIC, 1,
-                                 &BarrettArmInterface<DOF>::armControlModes,
-                                 this);
+void BarrettArmInterface<DOF>::init() {
+  arm_control_sub = nh->subscribe(ARM_CONTROL_TOPIC, 1,
+                                  &BarrettArmInterface<DOF>::armControlModes,
+                                  this);
 
   // Joint Publishers
-  arm_js_pub = nh.advertise<sensor_msgs::JointState>(ARM_JS_TOPIC, 1);
+  arm_js_pub = nh->advertise<sensor_msgs::JointState>(ARM_JS_TOPIC, 1);
 
   // Cartesian Publishers
-  arm_es_pub = nh.advertise<wam_msgs::EndpointState>(ARM_ES_TOPIC, 1);
+  arm_es_pub = nh->advertise<wam_msgs::EndpointState>(ARM_ES_TOPIC, 1);
 
   // Advertise the following services
-  arm_ctrl_gravity_srv = nh.advertiseService(
+  arm_ctrl_gravity_srv = nh->advertiseService(
       ARM_CONTROL_GRAV, &BarrettArmInterface<DOF>::controlGravity, this);
-  arm_mv_home_srv = nh.advertiseService(ARM_MOVE_HOME,
-                                        &BarrettArmInterface<DOF>::armMoveHome,
-                                        this);
-  arm_jnt_mv_to_srv = nh.advertiseService(
+  arm_mv_home_srv = nh->advertiseService(ARM_MOVE_HOME,
+                                         &BarrettArmInterface<DOF>::armMoveHome,
+                                         this);
+  arm_jnt_mv_to_srv = nh->advertiseService(
       ARM_JOINT_MOVETO, &BarrettArmInterface<DOF>::armJointMoveTo, this);
 
   // Initialize the Joint state publisher message with its default values
@@ -255,20 +256,8 @@ void BarrettArmInterface<DOF>::start() {
   for (size_t i = 0; i < DOF; ++i) {
     js_info.name[i] = jnt_names[i];
   }
-
-  // Set the loop rate at 200 Hz
-  ros::Rate loop_rate(ARM_RATE);
   // Turn on the gravity compensation by default
   arm_wam->gravityCompensate();
-
-  while (ros::ok()) {
-    armPublishInfo();
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
-  // Idle the Wam
-  arm_wam->idle();
-  arm_pm->getSafetyModule()->waitForMode(SafetyModule::IDLE);
 }
 }  // namespace
 #endif  // INCLUDE_BARRETT_ARM_H_

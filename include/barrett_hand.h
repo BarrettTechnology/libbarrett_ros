@@ -54,7 +54,6 @@ using namespace barrett;
 
 namespace bhand {
 
-const int HAND_RATE = 200;  // Execution rate in Hz
 const char* bhand_jnts[] = { "inner_f1", "inner_f2", "inner_f3", "spread",
     "outer_f1", "outer_f2", "outer_f3" };  // Hand Joints' name
 
@@ -90,7 +89,7 @@ class BarrettHandInterface {
   Hand* hand;
   ForceTorqueSensor* fts;
 
-  ros::NodeHandle nh;
+  ros::NodeHandle* nh;
   ros::Publisher hand_js_pub;
   ros::ServiceServer hand_open_grsp_srv, hand_close_grsp_srv,
   hand_open_sprd_srv;
@@ -122,13 +121,14 @@ class BarrettHandInterface {
       wam_msgs::BHandSpreadPos::Response &);
   bool handSpreadVel(wam_msgs::BHandSpreadVel::Request &,
       wam_msgs::BHandSpreadVel::Response &);
-  void publishHandInfo();
 
  public:
-  BarrettHandInterface(ProductManager &pm, systems::Wam<DOF> &wam)
-  : isInitialized(false), hand_wam(&wam), hand_pm(&pm),
-  hand(NULL), fts(NULL) {}
-  void start();
+  BarrettHandInterface(ProductManager &pm, systems::Wam<DOF> &wam,
+      ros::NodeHandle &n)
+  : isInitialized(false), hand_wam(&wam), hand_pm(&pm), hand(NULL),
+  fts(NULL), nh(&n) {}
+  void init();
+  void handPublishInfo();
 };
 
 /* Initializes the hand if it is not already initialized
@@ -289,7 +289,7 @@ bool BarrettHandInterface<DOF>::handSpreadVel(
 
 // Function to publish the joint states of the hand at desired rate
 template<size_t DOF>
-void BarrettHandInterface<DOF>::publishHandInfo() {
+void BarrettHandInterface<DOF>::handPublishInfo() {
   js.position.resize(7);
   hand->update();  // Update the hand sensors
   Hand::jp_type hi = hand->getInnerLinkPosition();  // get finger positions information
@@ -306,35 +306,35 @@ void BarrettHandInterface<DOF>::publishHandInfo() {
  * Initializes the publishers, services and assigns the defaults
  */
 template<size_t DOF>
-void BarrettHandInterface<DOF>::start() {
+void BarrettHandInterface<DOF>::init() {
 // Check if the hand is present
   if (hand_pm->foundHand()) {
     hand = hand_pm->getHand();
     hand->initialize();
     isInitialized = true;
     // Initalize the publishers
-    hand_js_pub = nh.advertise<sensor_msgs::JointState>(HAND_JS_TOPIC, 1);
+    hand_js_pub = nh->advertise<sensor_msgs::JointState>(HAND_JS_TOPIC, 1);
 
     // Advertise the following services only if there is a BarrettHand present
-    hand_open_grsp_srv = nh.advertiseService(
+    hand_open_grsp_srv = nh->advertiseService(
         HAND_OPN_GRSP_SRV, &BarrettHandInterface<DOF>::handOpenGrasp, this);
-    hand_close_grsp_srv = nh.advertiseService(
+    hand_close_grsp_srv = nh->advertiseService(
         HAND_CLS_GRSP_SRV, &BarrettHandInterface<DOF>::handCloseGrasp, this);
-    hand_open_sprd_srv = nh.advertiseService(
+    hand_open_sprd_srv = nh->advertiseService(
         HAND_OPN_SPRD_SRV, &BarrettHandInterface<DOF>::handOpenSpread, this);
-    hand_close_sprd_srv = nh.advertiseService(
+    hand_close_sprd_srv = nh->advertiseService(
         HAND_CLS_SPRD_SRV, &BarrettHandInterface<DOF>::handCloseSpread, this);
-    hand_fngr_pos_srv = nh.advertiseService(
+    hand_fngr_pos_srv = nh->advertiseService(
         HAND_FNGR_POS_SRV, &BarrettHandInterface<DOF>::handFingerPos, this);
-    hand_sprd_vel_srv = nh.advertiseService(
+    hand_sprd_vel_srv = nh->advertiseService(
         HAND_FNGR_VEL_SRV, &BarrettHandInterface<DOF>::handSpreadVel, this);
-    hand_grsp_pos_srv = nh.advertiseService(
+    hand_grsp_pos_srv = nh->advertiseService(
         HAND_GRSP_POS_SRV, &BarrettHandInterface<DOF>::handGraspPos, this);
-    hand_grsp_vel_srv = nh.advertiseService(
+    hand_grsp_vel_srv = nh->advertiseService(
         HAND_GRSP_VEL_SRV, &BarrettHandInterface<DOF>::handGraspVel, this);
-    hand_sprd_pos_srv = nh.advertiseService(
+    hand_sprd_pos_srv = nh->advertiseService(
         HAND_SPRD_POS_SRV, &BarrettHandInterface<DOF>::handSpreadPos, this);
-    hand_fngr_vel_srv = nh.advertiseService(
+    hand_fngr_vel_srv = nh->advertiseService(
         HAND_SPRD_VEL_SRV, &BarrettHandInterface<DOF>::handFingerVel, this);
 
     /* TODO Set the safety limits
@@ -346,13 +346,6 @@ void BarrettHandInterface<DOF>::start() {
     js.name.resize(7);
     js.name = bhand_joints;
     js.position.resize(7);
-    ros::Rate loop_rate(HAND_RATE);
-
-    while (ros::ok()) {
-      publishHandInfo();
-      ros::spinOnce();
-      loop_rate.sleep();
-    }
   }
 }
 }  // namespace

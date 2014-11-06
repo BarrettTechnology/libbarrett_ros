@@ -34,17 +34,35 @@
 #include <barrett_arm.h>
 #include <barrett_hand.h>
 
+const int ARM_RATE = 200;
 using namespace barrett;
 template<size_t DOF>
 int wam_main(int argc, char** argv, ProductManager& pm,
              systems::Wam<DOF>& wam) {
   ros::init(argc, argv, "libbarrett_ros");
+  ros::NodeHandle nh;
+  ros::Rate loop_rate(ARM_RATE);
 
-  barm::BarrettArmInterface<DOF> barrett_arm(pm, wam);
-  bhand::BarrettHandInterface<DOF> barrett_hand(pm, wam);
+  bool handIsFound = false;
 
+  barm::BarrettArmInterface<DOF> barrett_arm(pm, wam, nh);
+  bhand::BarrettHandInterface<DOF> barrett_hand(pm, wam, nh);
+
+  barrett_arm.init();
+  if (pm.foundHand()) {
+    barrett_hand.init();
+    handIsFound = true;
+  }
+
+  while (ros::ok()) {
+    barrett_arm.armPublishInfo();
+    if (handIsFound)
+      barrett_hand.handPublishInfo();
+    ros::spinOnce();
+    loop_rate.sleep();
+  }
   // Create thread for the Barrett Arm
-  boost::thread arm_thread(&barm::BarrettArmInterface<DOF>::start,
+ /* boost::thread arm_thread(&barm::BarrettArmInterface<DOF>::start,
                            &barrett_arm);
 
   // Check if the hand is present and start a seperate thread for it
@@ -54,6 +72,6 @@ int wam_main(int argc, char** argv, ProductManager& pm,
     hand_thread.join();
   }
 
-  arm_thread.join();
+  arm_thread.join();*/
   return 0;
 }
