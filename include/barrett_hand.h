@@ -124,7 +124,7 @@ class BarrettHandInterface {
       wam_msgs::BHandSpreadVel::Response &);
   void publishHandInfo();
 
-public:
+ public:
   BarrettHandInterface(ProductManager &pm, systems::Wam<DOF> &wam)
   : isInitialized(false), hand_wam(&wam), hand_pm(&pm),
   hand(NULL), fts(NULL) {}
@@ -310,6 +310,8 @@ void BarrettHandInterface<DOF>::start() {
 // Check if the hand is present
   if (hand_pm->foundHand()) {
     hand = hand_pm->getHand();
+    hand->initialize();
+    isInitialized = true;
     // Initalize the publishers
     hand_js_pub = nh.advertise<sensor_msgs::JointState>(HAND_JS_TOPIC, 1);
 
