@@ -65,12 +65,12 @@ const std::string HAND_OPN_GRSP_SRV = "hand/open_grasp";
 const std::string HAND_CLS_GRSP_SRV = "hand/close_grasp";
 const std::string HAND_OPN_SPRD_SRV = "hand/open_spread";
 const std::string HAND_CLS_SPRD_SRV = "hand/close_spread";
-const std::string HAND_FNGR_POS_SRV = "hand/finger_pos";
-const std::string HAND_FNGR_VEL_SRV = "hand/finger_vel";
-const std::string HAND_GRSP_POS_SRV = "hand/grasp_pos";
-const std::string HAND_GRSP_VEL_SRV = "hand/grasp_vel";
-const std::string HAND_SPRD_POS_SRV = "hand/spread_pos";
-const std::string HAND_SPRD_VEL_SRV = "hand/spread_vel";
+const std::string HAND_UPDATE_FNGR_POS_SRV = "hand/update_finger_pos";
+const std::string HAND_UPDATE_FNGR_VEL_SRV = "hand/update_finger_vel";
+const std::string HAND_UPDATE_GRSP_POS_SRV = "hand/update_grasp_pos";
+const std::string HAND_UPDATE_GRSP_VEL_SRV = "hand/update_grasp_vel";
+const std::string HAND_UPDATE_SPRD_POS_SRV = "hand/update_spread_pos";
+const std::string HAND_UPDATE_SPRD_VEL_SRV = "hand/update_spread_vel";
 
 // Default Request and Response messages
 std_srvs::Empty::Request def_req;
@@ -325,17 +325,17 @@ void BarrettHandInterface<DOF>::init() {
     hand_close_sprd_srv = nh->advertiseService(
         HAND_CLS_SPRD_SRV, &BarrettHandInterface<DOF>::handCloseSpread, this);
     hand_fngr_pos_srv = nh->advertiseService(
-        HAND_FNGR_POS_SRV, &BarrettHandInterface<DOF>::handFingerPos, this);
+        HAND_UPDATE_FNGR_POS_SRV, &BarrettHandInterface<DOF>::handFingerPos, this);
     hand_sprd_vel_srv = nh->advertiseService(
-        HAND_FNGR_VEL_SRV, &BarrettHandInterface<DOF>::handSpreadVel, this);
+        HAND_UPDATE_FNGR_VEL_SRV, &BarrettHandInterface<DOF>::handSpreadVel, this);
     hand_grsp_pos_srv = nh->advertiseService(
-        HAND_GRSP_POS_SRV, &BarrettHandInterface<DOF>::handGraspPos, this);
+        HAND_UPDATE_GRSP_POS_SRV, &BarrettHandInterface<DOF>::handGraspPos, this);
     hand_grsp_vel_srv = nh->advertiseService(
-        HAND_GRSP_VEL_SRV, &BarrettHandInterface<DOF>::handGraspVel, this);
+        HAND_UPDATE_GRSP_VEL_SRV, &BarrettHandInterface<DOF>::handGraspVel, this);
     hand_sprd_pos_srv = nh->advertiseService(
-        HAND_SPRD_POS_SRV, &BarrettHandInterface<DOF>::handSpreadPos, this);
+        HAND_UPDATE_SPRD_POS_SRV, &BarrettHandInterface<DOF>::handSpreadPos, this);
     hand_fngr_vel_srv = nh->advertiseService(
-        HAND_SPRD_VEL_SRV, &BarrettHandInterface<DOF>::handFingerVel, this);
+        HAND_UPDATE_SPRD_VEL_SRV, &BarrettHandInterface<DOF>::handFingerVel, this);
 
     /* TODO Set the safety limits
      * Move j3 to give room for hand initialization

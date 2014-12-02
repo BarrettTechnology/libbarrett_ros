@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(libbarrett_ros)
 
+#find_package(PkgConfig REQUIRED)
+#pkg_check_modules(BULLET bullet)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf
   message_generation
 )
 
@@ -16,6 +20,7 @@ catkin_package(
   CATKIN_DEPENDS 
   message_runtime
   wam_msgs
+  tf
   LIBRARIES ${PROJECT_NAME}
 )
 
