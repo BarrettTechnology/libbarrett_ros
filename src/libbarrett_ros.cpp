@@ -27,6 +27,8 @@
  */
 
 #include "ros/ros.h"
+#include <iostream>
+#include <memory>
 #include <barrett/products/product_manager.h>
 #include <barrett/standard_main_function.h>
 #include <boost/thread.hpp>
@@ -58,6 +60,7 @@ int wam_main(int argc, char** argv, ProductManager& pm,
     barrett_arm.armPublishInfo();
     if (handIsFound)
       barrett_hand.handPublishInfo();
+    barrett_arm.armUpdateCmds();
     ros::spinOnce();
     loop_rate.sleep();
   }

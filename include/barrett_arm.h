@@ -55,6 +55,8 @@
 #include <wam_msgs/DOF.h>
 #include <wam_msgs/SafetyLimits.h>
 
+#include <wam_control.h>
+
 // The file below provides access to the barrett::units namespace.
 #include <barrett/units.h>
 #include <barrett/systems.h>
@@ -239,6 +241,7 @@ class BarrettArmInterface {
   ProductManager* arm_pm;
   SafetyModule& sm;
   SafetyModule::PendantState ps;
+  BarrettBot<DOF>* bbot;
 
   ros::NodeHandle* nh;
   ros::Subscriber arm_jnt_pos_gns_sub, arm_jnt_vel_gns_sub,
@@ -268,7 +271,7 @@ class BarrettArmInterface {
   void armUpdateJntVel(const wam_msgs::RTJointVel::ConstPtr &);
   void armUpdateOrtnVel(const wam_msgs::RTOrtnVel::ConstPtr &);
   void armUpdateCartPos(const wam_msgs::RTCartPos::ConstPtr &);
-  void armUpdateJntPos(const wam_msgs::RTJointPos::ConstPtr &);
+  //void armUpdateJntPos(const wam_msgs::RTJointPos::ConstPtr &);
   void armUpdateJntTrq(const wam_msgs::RTJointTq::ConstPtr &);
 
   // Services Callback functions
@@ -307,11 +310,12 @@ class BarrettArmInterface {
 
 public:
   BarrettArmInterface(ProductManager &pm, systems::Wam<DOF> &wam,
-      ros::NodeHandle &n):move_vel(-1234), move_accel(-1234),
+      ros::NodeHandle &n):jnt_pos_status(false), move_vel(-1234), move_accel(-1234),
   ramp(NULL, SPEED), arm_wam(&wam), arm_pm(&pm),
   sm(*arm_pm->getSafetyModule()), nh(&n) {}
   void init();
   void armPublishInfo();
+  void armUpdateCmds();
   ~BarrettArmInterface() {
     arm_wam->idle();
     arm_pm->getSafetyModule()->waitForMode(SafetyModule::IDLE);
@@ -487,7 +491,7 @@ void BarrettArmInterface<DOF>::armUpdateCartPos(
 /*
  * Callback function for RT Joint Position Messages
  */
-template<size_t DOF>
+/*template<size_t DOF>
 void BarrettArmInterface<DOF>::armUpdateJntPos(
     const wam_msgs::RTJointPos::ConstPtr& msg) {
   if (msg->joints.size() != DOF) {
@@ -502,7 +506,7 @@ void BarrettArmInterface<DOF>::armUpdateJntPos(
     new_rt_jnt_pos_cmd = true;
   }
   last_jnt_pos_msg_time = ros::Time::now();
-}
+}*/
 
 /*
  *  Callback function for RT Cartesian Position Messages
@@ -608,6 +612,11 @@ void BarrettArmInterface<DOF>::armPublishInfo() {
     js_info.velocity[i] = jv_info[i];
     js_info.effort[i] = jt_info[i];
 
+    //Populate the bbot class variables with the state information to be published via ros interface
+    bbot->pos[i] = jp_info[i];
+    bbot->vel[i] = jv_info[i];
+    bbot->eff[i] = jt_info[i];
+
     if (i < 3) {
       es_info.positions[i] = cp_info[i];
       es_info.velocities[i] = cv_info[i];
@@ -620,6 +629,15 @@ void BarrettArmInterface<DOF>::armPublishInfo() {
 
   arm_js_pub.publish(js_info);
   arm_es_pub.publish(es_info);
+}
+
+/*
+ * Update the Joint command variables
+ */
+template<size_t DOF>
+void BarrettArmInterface<DOF>::armUpdateCmds() {
+for(size_t i = 0; i < DOF ; ++i)
+  rt_jp_cmd[i] = bbot->pos_cmd[i];
 }
 
 /*
@@ -910,7 +928,7 @@ void BarrettArmInterface<DOF>::armUpdateRT()  // systems::PeriodicDataLogger<deb
       }
       break;
 
-    case JOINT_POSITION:
+    /*case JOINT_POSITION:
       //Real-Time Joint Position Control Portion
       if (last_jnt_pos_msg_time + rt_msg_timeout > ros::Time::now())  // checking if a joint position message has been published and if it is within timeout
           {
@@ -929,6 +947,21 @@ void BarrettArmInterface<DOF>::armUpdateRT()  // systems::PeriodicDataLogger<deb
       } else {
         armHoldCurState();
       }
+      break;*/
+
+    case JOINT_POSITION:
+
+        if (!jnt_pos_status) {
+          jp_type jp_start = arm_wam->getJointPositions();
+          jp_track.setValue(jp_start);  // setting initial the joint position command
+          jp_rl.setLimit(rt_jp_rl);
+          systems::forceConnect(jp_track.output, jp_rl.input);
+          arm_wam->trackReferenceSignal(jp_rl.output);  // command the WAM to track the RT commanded up to (500 Hz) joint positions
+          jnt_pos_status = true;
+        } else {
+          jp_track.setValue(rt_jp_cmd); // set our joint position to subscribed command
+        }
+
       break;
 
     case JOINT_TORQUE:
@@ -989,9 +1022,9 @@ void BarrettArmInterface<DOF>::init() {
   arm_cart_pos_cmd_sub = nh->subscribe(
       ARM_UPDATE_CARTPOS_TOPIC, 1, &BarrettArmInterface<DOF>::armUpdateCartPos,
       this);
-  arm_jnt_pos_cmd_sub = nh->subscribe(
-      ARM_UPDATE_JNTPOS_TOPIC, 1, &BarrettArmInterface<DOF>::armUpdateJntPos,
-      this);
+  //arm_jnt_pos_cmd_sub = nh->subscribe(
+   //   ARM_UPDATE_JNTPOS_TOPIC, 1, &BarrettArmInterface<DOF>::armUpdateJntPos,
+   //   this);
 
   // Joint Publisher
   arm_js_pub = nh->advertise<sensor_msgs::JointState>(ARM_JS_TOPIC, 1);
