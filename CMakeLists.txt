@@ -9,15 +9,17 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   tf
-  wam_control
   message_generation
+  controller_manager
+  control_toolbox
+  urdf
+  barrett_description
 )
 
 find_package(Barrett REQUIRED)
 find_package(Eigen REQUIRED)
 
 catkin_package(
-  INCLUDE_DIRS include
   CATKIN_DEPENDS 
   message_runtime
   wam_msgs

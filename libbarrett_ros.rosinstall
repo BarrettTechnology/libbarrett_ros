@@ -1,0 +1,4 @@
+- git:
+    local-name: barrett_description
+    uri: https://github.com/BarrettTechnology/wam_common.git
+    version: ros_control
