@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   controller_manager
   control_toolbox
   urdf
-  barrett_description
 )
 
 find_package(Barrett REQUIRED)
