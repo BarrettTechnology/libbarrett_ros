@@ -1,0 +1,53 @@
+proficio_left_arm_controller:
+  type: "robot_mechanism_controllers/JointTrajectoryActionController"
+  joints:
+     - proficio_left_joint_1
+     - proficio_left_joint_2
+     - proficio_left_joint_3
+  gains:
+    proficio_left_joint_1:
+      p: 1200.0
+      d: 5
+      i: 0
+      i_clamp: 4
+      mass: 0.961
+      proxy:
+        lambda: 1.0
+        acc_converge: 0.0
+        vel_limit: 2.0
+        effort_limit: 11.8
+    proficio_left_joint_2:
+      p: 2000.0
+      d: 5
+      i: 0
+      i_clamp: 4
+      mass: 3.284
+      proxy:
+        lambda: 1.0
+        acc_converge: 0.0
+        vel_limit: 2.0
+        effort_limit: 11.8
+    proficio_left_joint_3:
+      p: 900.0
+      d: 5
+      i: 0
+      i_clamp: 4
+      mass: 0.77
+      proxy:
+        lambda: 1.0
+        acc_converge: 0.0
+        vel_limit: 2.0
+        effort_limit: 11.8
+  joint_trajectory_action_node:
+    joints:
+     - proficio_left_joint_1
+     - proficio_left_joint_2
+     - proficio_left_joint_3
+    constraints:
+      goal_time: 0.6
+      proficio_left_joint_1:
+        goal: 0.02
+      proficio_left_joint_2:
+        goal: 0.02
+      proficio_left_joint_3:
+        goal: 0.02

@@ -1,5 +1,0 @@
-<launch>
-     <group ns="barrett\wam">
-     <node pkg="libbarrett_ros" type="libbarrett_ros" name="libbarrett_ros" output="screen" cwd="node"/>
-     </group>
-</launch>

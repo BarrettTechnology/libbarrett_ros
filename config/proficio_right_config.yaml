@@ -1,0 +1,80 @@
+  # Publish all joint states -------------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 100
+ 
+  # Position - Velocity Controllers ------------------------------
+  joint1_posvel_controller:
+    type: barrett_controllers/JointPosVelController
+    joint: proficio_right_joint_1
+    pid: {p: 100, i: 0, d: 0.0}
+
+  joint2_posvel_controller:
+    type: barrett_controllers/JointPosVelController
+    joint: proficio_right_joint_2
+    pid: {p: 600, i: 0, d: 0.0}
+
+  joint3_posvel_controller:
+    type: barrett_controllers/JointPosVelController
+    joint: proficio_right_joint_3
+    pid: {p: 20, i: 0, d: 0.0}
+
+  # Position Controllers -----------------------------------------
+  joint1_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: proficio_right_joint_1
+    pid: {p: 10, i: 0, d: 0.5}
+
+  joint2_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: proficio_right_joint_2
+    pid: {p: 20, i: 0, d: 0.5}
+
+  joint3_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: proficio_right_joint_3
+    pid: {p: 0.01, i: 0, d: 0.05}
+
+  # Velocity Controllers -----------------------------------------
+  joint1_velocity_controller:
+    type: effort_controllers/JointVelocityController
+    joint: proficio_right_joint_1
+    pid: {p: 42, i: 0, d: 0}
+
+  joint2_velocity_controller:
+    type: effort_controllers/JointVelocityController
+    joint: proficio_right_joint_2
+    pid: {p: 18, i: 0, d: 0}
+
+  joint3_velocity_controller:
+    type: effort_controllers/JointVelocityController
+    joint: proficio_right_joint_3
+    pid: {p: 18, i: 0, d: 0}
+
+  # Effort Controllers -----------------------------------------
+  joint1_effort_controller:
+    type: effort_controllers/JointEffortController
+    joint: proficio_right_joint_1
+
+  joint2_effort_controller:
+    type: effort_controllers/JointEffortController
+    joint: proficio_right_joint_2
+
+  joint3_effort_controller:
+    type: effort_controllers/JointEffortController
+    joint: proficio_right_joint_3
+
+# Trajectory Controller --------------------------------------
+  trajectory_controller:
+    type: effort_controllers/JointTrajectoryController
+    joints:
+      - proficio_right_joint_1
+      - proficio_right_joint_2
+      - proficio_right_joint_3
+   
+    gains:
+      proficio_right_joint_1: {p: 500, d: 0.5, i: 0, i_clamp: 0}
+      proficio_right_joint_2: {p: 1100, d: 3, i: 0, i_clamp: 0}
+      proficio_right_joint_3: {p: 120, d: 0.5, i: 0, i_clamp: 0}
+
+    state_publish_rate: 500

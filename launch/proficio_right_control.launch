@@ -1,0 +1,19 @@
+<!-- Launches the ROS interface for Proficio's right hand configuration -->
+<launch>
+  <group ns="barrett">
+  	<!-- Load joint controller configurations from YAML file to parameter server -->
+  	<rosparam file="$(find libbarrett_ros)/config/proficio_right_config.yaml" command="load" />
+
+        <!-- Load the URDF file into the param server -->
+	<rosparam>tip_joint: proficio_right_joint_3</rosparam>
+	<param name="robot_description" command="cat '$(find barrett_description)/urdf/proficio_right.urdf'" />
+
+        <!-- Launch the libbarrett - ros interface node -->
+	<node pkg="libbarrett_ros" type="libbarrett_ros" name="libbarrett_ros" output="screen" />
+
+	<!-- Load the controllers -->
+	<node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" 
+	args="joint1_posvel_controller joint2_posvel_controller joint3_posvel_controller
+              joint_state_controller" />	
+  </group>
+</launch>

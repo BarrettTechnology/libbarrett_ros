@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   controller_manager
   control_toolbox
   urdf
+  joint_trajectory_controller
 )
 
 find_package(Barrett REQUIRED)

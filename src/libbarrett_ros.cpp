@@ -36,9 +36,10 @@
 #include <barrett/standard_main_function.h>
 #include <boost/thread.hpp>
 #include <barrett/systems/real_time_execution_manager.h>
+#include <time.h>
 
-//#include <barrett_arm.h>
-//#include <barrett_hand.h>
+#include <boost/bind.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_state_interface.h>
@@ -51,19 +52,19 @@ const std::string tip_joint = "tip_joint";
 using namespace barrett;
 
 template<size_t DOF>
-class BarrettHW : public hardware_interface::RobotHW, public systems::SingleIO<
-    typename units::JointPositions<DOF>::type,
-    typename units::JointTorques<DOF>::type> {
+class BarrettHW : public hardware_interface::RobotHW, public systems::System{
   BARRETT_UNITS_TEMPLATE_TYPEDEFS(DOF);
 
 public:
+  Input<jv_type> vel_input;
+  Input<jp_type> pos_input;
+  Output<jt_type> output;
+
+  typename Output<jt_type>::Value* outputValue;
   BarrettHW(systems::Wam<DOF> *wam, ProductManager *pm, ros::NodeHandle &nh, const std::string& sysName = "BarrettHW")
-  :systems::SingleIO<jp_type, jt_type>(sysName),arm_wam(wam), arm_pm(pm), jnt_pos(0.0),
+  :systems::System(sysName), vel_input(this), pos_input(this), output(this, &outputValue), arm_wam(wam), arm_pm(pm), jnt_pos(0.0),
   jnt_vel (0.0), jnt_trq(0.0), jnt_cmd(0.0), cm(this), n(nh)
   {
-    //const char* j_n[] = {"proficio_joint_1", "proficio_joint_2", "proficio_joint_3",
-    //   "j4", "j5", "j6", "j7"};
-    //std::vector<std::string> jnt_names(j_n, j_n+7);
     this->parseURDF();
     std::vector<hardware_interface::JointStateHandle> state_handle;
     std::vector<hardware_interface::JointHandle> pos_handle;
@@ -129,9 +130,9 @@ protected:
    * Read the Joint state of the robot from the hardware
    */
   void read() {
-    jnt_pos = this->input.getValue();
+    jnt_pos = pos_input.getValue();
+    jnt_vel = vel_input.getValue();
     jnt_trq = arm_wam->getJointTorques();
-    jnt_vel = arm_wam->getJointVelocities();
 
     // Read from barrett units into the registered joint states
     for(size_t i = 0; i < DOF; ++i) {
@@ -144,6 +145,8 @@ protected:
    * Update the controller manager
    */
   void update() {
+    ros::Time const now(highResolutionSystemTime() - 14399);
+
     cm.update(static_cast<ros::Time>(highResolutionSystemTime()), static_cast<ros::Duration>(arm_pm->getExecutionManager()->getPeriod()));
   }
 
@@ -192,16 +195,29 @@ template<size_t DOF>
 int wam_main(int argc, char** argv, ProductManager& pm,
              systems::Wam<DOF>& wam) {
   BARRETT_UNITS_TEMPLATE_TYPEDEFS(DOF);
+  typedef boost::tuple<jp_type, jv_type> jp_sample_type;
   ros::init(argc, argv, "libbarrett_ros");
   ros::NodeHandle nh;
-  ros::AsyncSpinner spinner(2);
+  ros::AsyncSpinner spinner(1);
   spinner.start();
-  wam.gravityCompensate();
+  // Increase the Safety Limits 
+  pm.getSafetyModule()->setTorqueLimit(7);
+  pm.getSafetyModule()->setVelocityLimit(0.0,0.5);
+
   BarrettHW<DOF> bhw(&wam, &pm, nh);
-  systems::connect(wam.jpOutput, bhw.input);
+
+  double omega_p = 10;
+  wam.jvFilter.setLowPass(jv_type(omega_p));
+  systems::TupleGrouper<jp_type, jv_type> tg;
+
+  systems::connect(wam.jpOutput, bhw.pos_input);
+  systems::connect(wam.jvOutput, bhw.vel_input);
+  wam.gravityCompensate();
+
   wam.trackReferenceSignal(bhw.output);
+
   // Wait for the user to press Shift-idle
   pm.getSafetyModule()->waitForMode(SafetyModule::IDLE);
-
+  spinner.stop();
   return 0;
 }
